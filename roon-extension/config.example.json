@@ -1,0 +1,5 @@
+{
+    "zone_name": "Your Zone Name",
+    "volume_step": 2,
+    "http_port": 9330
+}

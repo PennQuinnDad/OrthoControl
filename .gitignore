@@ -1,0 +1,12 @@
+.DS_Store
+
+# Swift
+app/.build/
+app/.swiftpm/
+app/OrthoControl.app
+xcuserdata/
+DerivedData/
+
+# Node.js
+roon-extension/node_modules/
+roon-extension/config.json
