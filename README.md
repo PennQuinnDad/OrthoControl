@@ -24,6 +24,24 @@ The ORTHO Remote is a Bluetooth Low Energy (BLE) MIDI device. OrthoControl:
 
 No pairing in Audio MIDI Setup required. No MIDI token needed.
 
+### Where does the Roon extension run?
+
+The Roon extension runs on the **same Mac as OrthoControl** — it does **not** need to run on your Roon Core machine. It discovers Roon Core automatically over the local network via multicast (SOOD protocol) and bridges between OrthoControl (local HTTP) and Roon Core (remote WebSocket).
+
+**Example:** Your Roon Server runs on a Mac mini in a closet, and you want to control it with an ORTHO Remote at your desk. You install OrthoControl and the Roon extension on your MacBook Pro — the Mac you sit at. The extension finds the Mac mini's Roon Core over your home network automatically. The ORTHO Remote connects via Bluetooth to your MacBook, and OrthoControl routes knob turns and button presses to Roon on the Mac mini. Nothing needs to be installed on the Mac mini.
+
+```
+┌───────── MacBook Pro (your desk) ──────────┐         ┌─── Mac mini (closet) ───┐
+│                                             │         │                         │
+│  ORTHO Remote ──BLE──▶ OrthoControl.app     │         │    Roon Server          │
+│                            │                │         │         ▲               │
+│                          HTTP               │         │         │               │
+│                            ▼                │         │         │               │
+│                     roon-extension ─── ── ──│── WS ──▶│─ ── ── ─┘               │
+│                    (Node.js :9330)           │  (LAN)  │                         │
+└─────────────────────────────────────────────┘         └─────────────────────────┘
+```
+
 ## Requirements
 
 - macOS 14 (Sonoma) or later
