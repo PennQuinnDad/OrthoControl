@@ -4,6 +4,8 @@ A macOS menu bar app that turns a [Teenage Engineering ORTHO Remote](https://tee
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 6](https://img.shields.io/badge/Swift-6-orange) ![License: MIT](https://img.shields.io/badge/License-MIT-green)
 
+<img src="images/menu-bar.png" width="360" alt="OrthoControl menu bar popup showing Roon mode connected to a zone">
+
 ## What it does
 
 - **Turn the knob** to change volume (1/64 step precision, same as Option+Shift+Volume)
