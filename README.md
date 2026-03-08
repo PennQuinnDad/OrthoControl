@@ -4,7 +4,7 @@ A macOS menu bar app that turns a [Teenage Engineering ORTHO Remote](https://tee
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 6](https://img.shields.io/badge/Swift-6-orange) ![License: MIT](https://img.shields.io/badge/License-MIT-green)
 
-<img src="images/menu-bar.png" width="360" alt="OrthoControl menu bar popup showing Roon mode connected to a zone">
+<img src="images/menu-bar-system.png" width="300" alt="OrthoControl in System mode controlling macOS volume"> &nbsp; <img src="images/menu-bar.png" width="300" alt="OrthoControl in Roon mode connected to a zone">
 
 ## What it does
 
