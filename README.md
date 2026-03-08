@@ -1,4 +1,4 @@
-# OrthoControl
+# OrthoControl for Roon
 
 A macOS menu bar app that turns a [Teenage Engineering ORTHO Remote](https://teenage.engineering/products/ortho-remote) into a wireless volume knob — for both **system volume** and **Roon** playback.
 
