@@ -14,6 +14,8 @@ let transport = null;
 let targetZoneId = null;
 let targetOutputId = null;
 let targetZoneName = null;
+let reconnectTimer = null;
+const RECONNECT_DELAY = 15000; // 15s before restarting discovery
 
 function findTargetZone() {
   if (!transport || !transport._zones) return;
@@ -51,6 +53,10 @@ const roon = new RoonApi({
 
   core_found: function (core) {
     console.log("Roon Core found:", core.display_name);
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
     transport = core.services.RoonApiTransport;
 
     transport.subscribe_zones((response, msg) => {
@@ -62,16 +68,41 @@ const roon = new RoonApi({
   },
 
   core_lost: function (core) {
-    console.log("Roon Core lost");
+    console.log("Roon Core lost — will restart discovery in 15s");
     transport = null;
     targetZoneId = null;
     targetOutputId = null;
     targetZoneName = null;
+
+    // After sleep, SOOD UDP sockets go stale. The built-in periodic_scan
+    // sends queries on dead sockets that never get responses. Force a
+    // full restart of discovery to create fresh sockets.
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      restartDiscovery();
+    }, RECONNECT_DELAY);
   },
 });
 
 roon.init_services({ required_services: [RoonApiTransport] });
 roon.start_discovery();
+
+// Force-restart SOOD discovery with fresh UDP sockets.
+// Called when core_lost fires and the built-in periodic_scan fails to reconnect.
+function restartDiscovery() {
+  console.log("Restarting SOOD discovery (fresh sockets)...");
+  try {
+    if (roon._sood) {
+      roon._sood.stop();
+      roon._sood = null;
+      roon._sood_conns = {};
+    }
+  } catch (e) {
+    console.warn("Error stopping SOOD:", e.message);
+  }
+  roon.start_discovery();
+}
 
 // Function to send Roon commands
 function handleCommand(command, count) {

@@ -73,6 +73,30 @@ npm start
 
 On first run, go to **Roon Settings > Extensions** and authorize "Ortho Remote."
 
+### Run as a background service (recommended)
+
+The extension needs to stay running for Roon mode to work. Instead of leaving a terminal open, install it as a launchd service that starts automatically at login and restarts if it crashes:
+
+```bash
+# Edit the plist — update WorkingDirectory and node path for your system
+cp roon-extension/com.orthocontrol.roon-extension.plist ~/Library/LaunchAgents/
+nano ~/Library/LaunchAgents/com.orthocontrol.roon-extension.plist
+
+# Load the service
+launchctl load ~/Library/LaunchAgents/com.orthocontrol.roon-extension.plist
+
+# Check status
+curl http://127.0.0.1:9330/status
+
+# View logs
+tail -f /tmp/roon-ortho.log
+
+# Stop the service
+launchctl unload ~/Library/LaunchAgents/com.orthocontrol.roon-extension.plist
+```
+
+The extension automatically reconnects to Roon Core after network interruptions or sleep/wake cycles.
+
 ## Configuration
 
 ### Roon extension (`roon-extension/config.json`)
@@ -123,7 +147,8 @@ roon-extension/ (Node.js)
 |-------|-----|
 | ORTHO Remote not found | Turn it on (press button), wait ~5 seconds, check Bluetooth is on |
 | Knob works but no volume HUD | Grant Accessibility permission (see above) |
-| "Roon extension not running" | Start it: `cd roon-extension && npm start` |
+| "Roon extension not running" | Start it: `cd roon-extension && npm start` (or set up the launchd service) |
+| Extension loses Roon after sleep | The extension auto-reconnects within ~15s. If using launchd, it also auto-restarts on crash |
 | Roon zone not found | Check `zone_name` in config.json matches Roon exactly |
 | Volume too sensitive / too slow | Adjust `volume_step` in config.json (1 = fine, 5 = coarse) |
 
