@@ -134,8 +134,12 @@ final class BluetoothManager: NSObject, CBCentralManagerDelegate {
             case .poweredOff, .unauthorized, .unsupported:
                 connectedPeripheral = nil
                 state.connectionStatus = .disconnected
-            case .resetting, .unknown:
-                log.info("Bluetooth state: \(central.state.rawValue) — waiting")
+            case .resetting:
+                log.info("Bluetooth resetting — clearing stale peripheral")
+                connectedPeripheral = nil
+                state.connectionStatus = .disconnected
+            case .unknown:
+                log.info("Bluetooth state unknown — waiting")
             @unknown default:
                 log.info("Unhandled Bluetooth state: \(central.state.rawValue)")
             }

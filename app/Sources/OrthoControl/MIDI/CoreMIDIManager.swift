@@ -11,12 +11,29 @@ private let log = Logger(subsystem: "com.ericanderson.OrthoControl", category: "
 final class CoreMIDIManager: @unchecked Sendable {
     private var midiClient = MIDIClientRef()
     private var inputPort = MIDIPortRef()
-    private var connectedSource: MIDIEndpointRef = 0
     private var rescanTimer: Timer?
     private var rescanCount = 0
 
-    var onMIDIEvent: (@Sendable (MIDIEvent) -> Void)?
-    var onConnectionChange: (@Sendable (_ connected: Bool) -> Void)?
+    // Protected by `lock` — accessed from CoreMIDI threads and main thread
+    private let lock = NSLock()
+    private var _connectedSource: MIDIEndpointRef = 0
+    private var _onMIDIEvent: (@Sendable (MIDIEvent) -> Void)?
+    private var _onConnectionChange: (@Sendable (_ connected: Bool) -> Void)?
+
+    private var connectedSource: MIDIEndpointRef {
+        get { lock.withLock { _connectedSource } }
+        set { lock.withLock { _connectedSource = newValue } }
+    }
+
+    var onMIDIEvent: (@Sendable (MIDIEvent) -> Void)? {
+        get { lock.withLock { _onMIDIEvent } }
+        set { lock.withLock { _onMIDIEvent = newValue } }
+    }
+
+    var onConnectionChange: (@Sendable (_ connected: Bool) -> Void)? {
+        get { lock.withLock { _onConnectionChange } }
+        set { lock.withLock { _onConnectionChange = newValue } }
+    }
 
     init() {
         setupMIDI()
@@ -218,7 +235,7 @@ final class CoreMIDIManager: @unchecked Sendable {
         let data2 = UInt8(word & 0xFF)
 
         let hex = String(format: "%08X", word)
-        log.info("MIDI word: 0x\(hex, privacy: .public) type=\(messageType) status=\(String(format: "0x%02X", statusByte), privacy: .public) d1=\(data1) d2=\(data2)")
+        log.debug("MIDI word: 0x\(hex, privacy: .public) type=\(messageType) status=\(String(format: "0x%02X", statusByte), privacy: .public) d1=\(data1) d2=\(data2)")
 
         guard messageType == 0x2 else { return }
 

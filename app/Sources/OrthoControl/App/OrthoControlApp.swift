@@ -155,11 +155,11 @@ final class AppCoordinator {
             while !Task.isCancelled {
                 let status = await roonController.checkStatus()
                 if let status {
-                    log.info("Roon poll: connected=\(status.connected) zone=\(status.zoneName ?? "nil")")
+                    log.debug("Roon poll: connected=\(status.connected) zone=\(status.zoneName ?? "nil")")
                     state.roonConnected = status.connected
                     state.roonZoneName = status.zoneName
                 } else {
-                    log.info("Roon poll: unreachable")
+                    log.debug("Roon poll: unreachable")
                     state.roonConnected = false
                     state.roonZoneName = nil
                 }
@@ -183,7 +183,7 @@ final class AppCoordinator {
 
         switch event {
         case .controlChange(let channel, let controller, let value):
-            log.info("CC: ch=\(channel) cc=\(controller) val=\(value)")
+            log.debug("CC: ch=\(channel) cc=\(controller) val=\(value)")
 
             if state.controlMode == .roon {
                 handleVolumeRoon(value: value)
@@ -192,7 +192,7 @@ final class AppCoordinator {
             }
 
         case .noteOn(let channel, let note, let velocity):
-            log.info("NoteOn: ch=\(channel) note=\(note) vel=\(velocity)")
+            log.debug("NoteOn: ch=\(channel) note=\(note) vel=\(velocity)")
             if state.controlMode == .roon {
                 roonController.sendCommand("play_pause")
             } else {
@@ -200,7 +200,7 @@ final class AppCoordinator {
             }
 
         case .noteOff(let channel, let note, let velocity):
-            log.info("NoteOff: ch=\(channel) note=\(note) vel=\(velocity)")
+            log.debug("NoteOff: ch=\(channel) note=\(note) vel=\(velocity)")
         }
     }
 

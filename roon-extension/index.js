@@ -4,7 +4,17 @@ const RoonApiTransport = require("node-roon-api-transport");
 const fs = require("fs-extra");
 
 // Load config
-const config = fs.readJsonSync("./config.json");
+let config;
+try {
+  config = fs.readJsonSync("./config.json");
+} catch (e) {
+  console.error(
+    e.code === "ENOENT"
+      ? 'config.json not found. Copy config.example.json to config.json and set your zone name.'
+      : `Failed to parse config.json: ${e.message}`
+  );
+  process.exit(1);
+}
 const HTTP_PORT = Number(config.http_port) || 9330;
 const VOLUME_STEP = Number(config.volume_step) || 2;
 const MAX_BODY_SIZE = 1024; // 1KB limit for POST bodies
@@ -178,10 +188,13 @@ const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url === "/command") {
     let body = "";
     let bodySize = 0;
+    let responded = false;
 
     req.on("data", (chunk) => {
+      if (responded) return;
       bodySize += chunk.length;
       if (bodySize > MAX_BODY_SIZE) {
+        responded = true;
         res.statusCode = 413;
         res.end(JSON.stringify({ ok: false, error: "Request body too large" }));
         req.destroy();
@@ -191,11 +204,15 @@ const server = http.createServer((req, res) => {
     });
 
     req.on("error", () => {
+      if (responded) return;
+      responded = true;
       res.statusCode = 400;
       res.end(JSON.stringify({ ok: false, error: "Request error" }));
     });
 
     req.on("end", () => {
+      if (responded) return;
+      responded = true;
       try {
         const parsed = JSON.parse(body);
         const command = String(parsed.command || "");
@@ -227,6 +244,15 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${HTTP_PORT} already in use. Is another instance running?`);
+  } else {
+    console.error(`HTTP server error: ${err.message}`);
+  }
+  process.exit(1);
+});
+
 server.listen(HTTP_PORT, "127.0.0.1", () => {
   console.log(`HTTP server listening on http://127.0.0.1:${HTTP_PORT}`);
 });
@@ -234,8 +260,10 @@ server.listen(HTTP_PORT, "127.0.0.1", () => {
 // Graceful shutdown
 function shutdown() {
   console.log("Shutting down...");
-  server.close();
-  process.exit(0);
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  server.close(() => process.exit(0));
+  // Force exit after 3s if server.close hangs
+  setTimeout(() => process.exit(0), 3000).unref();
 }
 
 process.on("SIGINT", shutdown);
