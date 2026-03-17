@@ -12,6 +12,9 @@ A macOS menu bar app that turns a [Teenage Engineering ORTHO Remote](https://tee
 - **Press the button** to play/pause
 - **System mode** controls macOS system volume with native volume HUD
 - **Roon mode** controls a Roon zone via the included Node.js extension
+- **Multi-zone support** — switch between Roon zones from the menu bar dropdown
+- **Live playback indicators** — animated equalizer bars show which zones are playing
+- **WebSocket real-time updates** — zone state, volume, and now-playing info pushed instantly
 - Auto-connects via Bluetooth, auto-reconnects on wake from sleep
 - Runs as a lightweight menu bar app (no Dock icon)
 
@@ -73,6 +76,8 @@ npm start
 
 On first run, go to **Roon Settings > Extensions** and authorize "Ortho Remote."
 
+The `zone_name` in `config.json` sets the initial zone. Once the extension is running, you can switch zones from the OrthoControl menu bar dropdown — the selection is persisted automatically.
+
 ### Run as a background service (recommended)
 
 The extension needs to stay running for Roon mode to work. Instead of leaving a terminal open, install it as a launchd service that starts automatically at login and restarts if it crashes:
@@ -111,9 +116,22 @@ The extension automatically reconnects to Roon Core after network interruptions 
 
 | Key | Description |
 |-----|-------------|
-| `zone_name` | Exact display name of your Roon zone (check Roon Settings > Audio) |
+| `zone_name` | Initial Roon zone (can be changed from the menu bar at runtime) |
 | `volume_step` | dB change per knob tick (default: 2) |
 | `http_port` | Local HTTP port for OrthoControl communication (default: 9330) |
+
+### API Endpoints
+
+The Roon extension exposes these HTTP endpoints on `127.0.0.1:9330`:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/status` | GET | Current zone status, volume, playback state, and now-playing info |
+| `/zones` | GET | List all available Roon zones with playback states |
+| `/zone` | POST | Switch the active zone (`{"zone_id": "..."}`) |
+| `/command` | POST | Send a transport command (`play_pause`, `next`, `prev`, `volume_up`, `volume_down`) |
+
+A WebSocket endpoint is also available at `ws://127.0.0.1:9330` for real-time state updates.
 
 ### Accessibility (optional)
 
@@ -136,7 +154,7 @@ OrthoControl.app (Swift/SwiftUI)
 └── App/             # App entry point + coordinator
 
 roon-extension/ (Node.js)
-├── index.js         # Roon API + HTTP server
+├── index.js         # Roon API + HTTP/WebSocket server
 ├── config.json      # Zone config (user-specific, gitignored)
 └── scripts/         # postinstall patch for Node.js 22+
 ```
@@ -149,7 +167,7 @@ roon-extension/ (Node.js)
 | Knob works but no volume HUD | Grant Accessibility permission (see above) |
 | "Roon extension not running" | Start it: `cd roon-extension && npm start` (or set up the launchd service) |
 | Extension loses Roon after sleep | The extension auto-reconnects within ~15s. If using launchd, it also auto-restarts on crash |
-| Roon zone not found | Check `zone_name` in config.json matches Roon exactly |
+| Roon zone not found | Check `zone_name` in config.json matches Roon exactly (or switch zones from the menu bar) |
 | Volume too sensitive / too slow | Adjust `volume_step` in config.json (1 = fine, 5 = coarse) |
 
 ## License

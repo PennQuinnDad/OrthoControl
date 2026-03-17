@@ -14,8 +14,18 @@ final class OrthoRemoteState {
     var controlMode: ControlMode = .system
     var roonConnected = false
     var roonZoneName: String?
+    var roonSelectedZoneId: String?
+    var roonZones: [RoonZone] = []
 
     var volumePercent: Int {
         Int(currentVolume * 100)
     }
+}
+
+struct RoonZone: Identifiable, Sendable {
+    let zone_id: String
+    let display_name: String
+    let state: String?
+
+    var id: String { zone_id }
 }

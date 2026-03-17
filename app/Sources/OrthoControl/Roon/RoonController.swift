@@ -65,4 +65,52 @@ final class RoonController {
             return nil
         }
     }
+
+    /// Fetch all available Roon zones.
+    func fetchZones() async -> (zones: [RoonZone], selectedZoneId: String?)? {
+        guard let url = URL(string: "\(baseURL)/zones") else { return nil }
+
+        do {
+            let (data, _) = try await session.data(from: url)
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let zonesArray = json["zones"] as? [[String: Any]] else {
+                return nil
+            }
+
+            let zones = zonesArray.compactMap { z -> RoonZone? in
+                guard let id = z["zone_id"] as? String,
+                      let name = z["display_name"] as? String else { return nil }
+                return RoonZone(zone_id: id, display_name: name, state: z["state"] as? String)
+            }
+
+            let selectedId = json["selected_zone_id"] as? String
+            return (zones, selectedId)
+        } catch {
+            log.warning("Zones fetch failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Switch the active Roon zone.
+    func selectZone(_ zoneId: String) async -> Bool {
+        guard let url = URL(string: "\(baseURL)/zone") else { return false }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["zone_id": zoneId])
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    log.info("Zone switched to \(json["zone_name"] as? String ?? zoneId)")
+                }
+                return true
+            }
+            return false
+        } catch {
+            log.warning("Zone select failed: \(error.localizedDescription)")
+            return false
+        }
+    }
 }

@@ -16,7 +16,8 @@ struct OrthoControlApp: App {
                 onConnect: { coordinator.connect() },
                 onDisconnect: { coordinator.disconnect() },
                 onToggleLaunchAtLogin: { coordinator.toggleLaunchAtLogin($0) },
-                onSetControlMode: { coordinator.setControlMode($0) }
+                onSetControlMode: { coordinator.setControlMode($0) },
+                onSelectZone: { coordinator.selectRoonZone($0) }
             )
         } label: {
             StatusItemIcon(status: coordinator.state.connectionStatus)
@@ -147,6 +148,19 @@ final class AppCoordinator {
         }
     }
 
+    func selectRoonZone(_ zoneId: String) {
+        Task { @MainActor in
+            let ok = await roonController.selectZone(zoneId)
+            if ok {
+                state.roonSelectedZoneId = zoneId
+                // Refresh status to pick up new zone name
+                if let status = await roonController.checkStatus() {
+                    state.roonZoneName = status.zoneName
+                }
+            }
+        }
+    }
+
     // MARK: - Roon Status Polling
 
     private func startRoonStatusPolling() {
@@ -162,7 +176,16 @@ final class AppCoordinator {
                     log.debug("Roon poll: unreachable")
                     state.roonConnected = false
                     state.roonZoneName = nil
+                    state.roonZones = []
+                    state.roonSelectedZoneId = nil
                 }
+
+                // Also fetch zone list
+                if let result = await roonController.fetchZones() {
+                    state.roonZones = result.zones
+                    state.roonSelectedZoneId = result.selectedZoneId
+                }
+
                 try? await Task.sleep(for: .seconds(3))
             }
         }
